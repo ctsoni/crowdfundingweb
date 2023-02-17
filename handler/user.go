@@ -31,8 +31,11 @@ func (h *userHandler) RegisterUser(ctx *gin.Context) {
 		return
 	}
 
+	// map input dari user ke struct RegisterUserInput
+	// struct di atas passing sebagai parameter service
 	newUser, err := h.userService.RegisterUser(input)
 
+	// newUser diformat agar output response body sesuai dengan API spec
 	formatter := user.FormatUserResponse(newUser, "token")
 	response := helper.APIResponse("Account has been registered", http.StatusOK, "success", formatter)
 	if err != nil {
@@ -42,7 +45,38 @@ func (h *userHandler) RegisterUser(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, response)
+}
 
-	// map input dari user ke struct RegisterUserInput
-	// struct di atas passding sebagai parameter service
+func (h *userHandler) Login(ctx *gin.Context) {
+	// user memasukkan email dan password
+	// input ditangkap handler
+	var input user.LoginInput
+
+	err := ctx.ShouldBindJSON(&input)
+	if err != nil {
+		errors := helper.FormatError(err)
+		errorMessage := gin.H{"errors": errors}
+
+		response := helper.APIResponse("Login failed", http.StatusUnprocessableEntity, "error", errorMessage)
+		ctx.JSON(http.StatusUnprocessableEntity, response)
+		return
+	}
+
+	// mapping dari input user ke input struct
+	// input struct pass ke service
+	// dalam service mencari email yang dimasukkan
+	// jika ketemu maka password dicocokkan
+	userLogin, err := h.userService.Login(input)
+
+	if err != nil {
+		errorMessage := gin.H{"errors": err.Error()}
+		response := helper.APIResponse("Login failed", http.StatusUnprocessableEntity, "error", errorMessage)
+		ctx.JSON(http.StatusUnprocessableEntity, response)
+		return
+	}
+
+	formatter := user.FormatUserResponse(userLogin, "token")
+	response := helper.APIResponse("Login success", http.StatusOK, "success", formatter)
+
+	ctx.JSON(http.StatusOK, response)
 }

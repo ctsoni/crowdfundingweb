@@ -24,11 +24,13 @@ func main() {
 
 	userRepository := user.NewRepository(db)
 	userService := user.NewService(userRepository)
+
 	userHandler := handler.NewUserHandler(userService)
 
 	r := gin.Default()
 	api := r.Group("/api/v1")
 
 	api.POST("/users", userHandler.RegisterUser)
+	api.POST("/sessions", userHandler.Login)
 	r.Run("127.0.0.1:8080")
 }
