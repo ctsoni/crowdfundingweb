@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"crowdfundingweb/auth"
 	"crowdfundingweb/helper"
 	"crowdfundingweb/user"
 	"fmt"
@@ -12,10 +13,14 @@ import (
 // mapping input dari user untuk menjadi struct input
 type userHandler struct {
 	userService user.Service
+	authService auth.Service
 }
 
-func NewUserHandler(userService user.Service) *userHandler {
-	return &userHandler{userService}
+func NewUserHandler(userService user.Service, authService auth.Service) *userHandler {
+	return &userHandler{
+		userService: userService,
+		authService: authService,
+	}
 }
 
 func (h *userHandler) RegisterUser(ctx *gin.Context) {
@@ -35,15 +40,23 @@ func (h *userHandler) RegisterUser(ctx *gin.Context) {
 	// map input dari user ke struct RegisterUserInput
 	// struct di atas passing sebagai parameter service
 	newUser, err := h.userService.RegisterUser(input)
-
-	// newUser diformat agar output response body sesuai dengan API spec
-	formatter := user.FormatUserResponse(newUser, "token")
-	response := helper.APIResponse("Account has been registered", http.StatusOK, "success", formatter)
 	if err != nil {
 		response := helper.APIResponse("Register failed", http.StatusBadRequest, "error", nil)
 		ctx.JSON(http.StatusBadRequest, response)
 		return
 	}
+
+	// newUser diformat agar output response body sesuai dengan API spec
+	// jwt
+	token, err := h.authService.GenerateToken(newUser.ID)
+	if err != nil {
+		response := helper.APIResponse("Register failed", http.StatusBadRequest, "error", nil)
+		ctx.JSON(http.StatusBadRequest, response)
+		return
+	}
+
+	formatter := user.FormatUserResponse(newUser, token)
+	response := helper.APIResponse("Account has been registered", http.StatusOK, "success", formatter)
 
 	ctx.JSON(http.StatusOK, response)
 }
@@ -76,7 +89,14 @@ func (h *userHandler) Login(ctx *gin.Context) {
 		return
 	}
 
-	formatter := user.FormatUserResponse(userLogin, "token")
+	token, err := h.authService.GenerateToken(userLogin.ID)
+	if err != nil {
+		response := helper.APIResponse("Login failed", http.StatusBadRequest, "error", nil)
+		ctx.JSON(http.StatusBadRequest, response)
+		return
+	}
+
+	formatter := user.FormatUserResponse(userLogin, token)
 	response := helper.APIResponse("Successfully loggedin", http.StatusOK, "success", formatter)
 
 	ctx.JSON(http.StatusOK, response)

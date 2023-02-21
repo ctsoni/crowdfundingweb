@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crowdfundingweb/auth"
 	"crowdfundingweb/handler"
 	"crowdfundingweb/user"
 	"fmt"
@@ -24,7 +25,8 @@ func main() {
 
 	userRepository := user.NewRepository(db)
 	userService := user.NewService(userRepository)
-	userHandler := handler.NewUserHandler(userService)
+	authService := auth.NewJWTService()
+	userHandler := handler.NewUserHandler(userService, authService)
 
 	r := gin.Default()
 	api := r.Group("/api/v1")
