@@ -163,10 +163,10 @@ func (h *userHandler) UploadAvatar(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, response)
 		return
 	}
-	// harusnya dapat dari JWT
-	userID := 12
+	// implement jwt
+	currentUser := ctx.MustGet("currentUser").(user.User)
 
-	path := fmt.Sprintf("images/%d-%s", userID, file.Filename)
+	path := fmt.Sprintf("images/%d-%s", currentUser.ID, file.Filename)
 
 	err = ctx.SaveUploadedFile(file, path)
 	if err != nil {
@@ -178,7 +178,7 @@ func (h *userHandler) UploadAvatar(ctx *gin.Context) {
 		return
 	}
 
-	_, err = h.userService.SaveAvatar(userID, path)
+	_, err = h.userService.SaveAvatar(currentUser.ID, path)
 	if err != nil {
 		data := gin.H{
 			"is_uploaded": false,
